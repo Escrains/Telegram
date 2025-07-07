@@ -1,13 +1,18 @@
 import csv
 import os
 from telegram import Update
-from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler, ContextTypes, filters
+from telegram.ext import (
+    ApplicationBuilder,
+    MessageHandler,
+    CommandHandler,
+    ContextTypes,
+    filters
+)
 
-# Token incluido directamente (REEMPLÁZALO pronto por seguridad)
-TOKEN = "7451686108:AAGRPy_-JIp5YoLJqY6eVOQWm2LtE_nxyps"
+TOKEN = os.getenv("BOT_TOKEN")
 ARCHIVO = "contactos.csv"
 
-# Función para guardar un contacto recibido
+# Guardar contactos
 async def guardar_contacto(update: Update, context: ContextTypes.DEFAULT_TYPE):
     contacto = update.message.contact
     if contacto:
@@ -20,16 +25,16 @@ async def guardar_contacto(update: Update, context: ContextTypes.DEFAULT_TYPE):
             writer = csv.writer(archivo_csv)
             writer.writerow([nombre, apellido, numero, comentario])
 
-        await update.message.reply_text("✅ Contacto guardado. Puedes agregar un comentario enviando el número junto al mensaje más tarde.")
+        await update.message.reply_text("✅ Contacto guardado.")
 
-# Función para enviar el archivo completo de contactos
+# Ver todos los contactos como archivo
 async def ver_contactos(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if os.path.exists(ARCHIVO):
         await update.message.reply_document(document=open(ARCHIVO, "rb"), filename="contactos.csv")
     else:
-        await update.message.reply_text("Aún no hay contactos guardados.")
+        await update.message.reply_text("📂 Aún no hay contactos guardados.")
 
-# Función para buscar contacto por número
+# Buscar contacto por número
 async def buscar_contacto_por_numero(update: Update, context: ContextTypes.DEFAULT_TYPE):
     numero_consulta = update.message.text.strip()
 
@@ -47,21 +52,21 @@ async def buscar_contacto_por_numero(update: Update, context: ContextTypes.DEFAU
                     mensaje = f"👤 *Nombre:* {nombre} {apellido}\n📞 *Número:* {fila[2]}\n📝 *Comentario:* {comentario}"
                     await update.message.reply_markdown(mensaje)
                     return
-        await update.message.reply_text("❌ No se encontró ese número en la base de datos.")
+        await update.message.reply_text("❌ Número no encontrado.")
     else:
-        await update.message.reply_text("❌ No hay contactos registrados aún.")
+        await update.message.reply_text("❌ No hay contactos registrados.")
 
-# Función de ayuda
+# Ayuda
 async def ayuda(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "📌 *Bot de Contactos*\n\n"
-        "✅ Envía un contacto para guardarlo\n"
-        "🔍 Envía un número para ver sus datos\n"
-        "📥 Usa /ver_contactos para descargar la lista\n",
+        "📥 Envía un contacto para guardarlo\n"
+        "🔎 Envía un número para consultar su comentario\n"
+        "📄 /ver_contactos para descargar la lista\n",
         parse_mode='Markdown'
     )
 
-# Configuración
+# Ejecutar bot
 app = ApplicationBuilder().token(TOKEN).build()
 app.add_handler(MessageHandler(filters.CONTACT, guardar_contacto))
 app.add_handler(CommandHandler("ver_contactos", ver_contactos))
